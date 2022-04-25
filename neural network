@@ -1,0 +1,123 @@
+import tensorflow as tf
+import numpy as np
+
+input_1 = tf.keras.Input(shape=(4,), name='input_1')
+
+layer_1 = tf.keras.layers.Dense(32, name='layer_1')(input_1)
+
+output_1 = tf.keras.layers.Dense(1, name='output_1')(layer_1)
+
+model_3 = tf.keras.Model(
+    inputs= input_1,
+    outputs=output_1,
+)
+
+tf.keras.utils.plot_model(model_3, show_shapes=True)
+
+
+model_3.compile(
+    loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), # Функция потерь
+    optimizer='Adam', # Оптимизатор
+    metrics=[ # Метрики
+        'accuracy', # Если у объекта назначено имя, то можно вызвать объект с его помощью
+        tf.keras.metrics.Precision()
+    ]
+)
+
+
+
+import xlrd
+import random
+file_loc="Input.xls"
+wkb=xlrd.open_workbook(file_loc)
+sheet=wkb.sheet_by_index(0)
+
+_matrix=[]
+for row in range (sheet.nrows):
+    _row = []
+    for col in range (sheet.ncols):
+        _row.append(sheet.cell_value(row,col))
+    _matrix.append(_row)
+
+file_loc1="Output.xls"
+wkb1=xlrd.open_workbook(file_loc1)
+sheet1=wkb1.sheet_by_index(0)
+
+_matrix1=[]
+for row in range (sheet1.nrows):
+    _row1 = []
+    for col in range (sheet1.ncols):
+        _row1.append(sheet1.cell_value(row,col))
+    _matrix1.append(_row1)
+
+X=_matrix
+Y=_matrix1
+X =np.array(X)
+Y =np.array(Y)
+XY = [X,Y]
+random.shuffle(XY)
+
+# Скомпилируем
+model_3.compile(
+    optimizer='Adam',
+    loss='mse',
+    metrics=['mean_absolute_error']
+)
+
+# Обучим
+model_3.fit(
+    X, # Набор входных данных
+    Y, # Набор правильных ответов
+    validation_split=0.2, # Этот параметр автоматически выделит часть обучающего набора на валидационные данные. В данном случа 20%
+    epochs=15, # Процесс обучения завершится после 20 эпох
+    batch_size = 8 # Набор данных будет разбит на пакеты (батчи) по 8 элементов набора в каждом.
+)
+
+
+
+X_test = [[0.01950701444,0,0.044114243,0]]
+Y_test = [[1]]
+#Y_test = np.array(np.random.random((10)))
+
+res = model_3.evaluate(X_test, Y_test)
+print("loss and mean_absolute_error", res)
+
+predictions = (int)(np.round(model_3.predict(X_test)))
+print(predictions)
+
+model_3.save("testModels/model")
+
+savedmodel = tf.keras.models.load_model("testModels/model")
+X_test = [[0.000263608,	0,	3.77E-05,	0],
+[0.000266863,	0,	2.34E-05,	1],
+[6.51E-06,	0,	1.07E-05,	0],
+[0.000302662,	0,	0.00003852,	0],
+[6.51E-06,	0,	0.000040552,	0],
+[0.00016923,	0,	2.53E-05,	0],
+[0.000263608,	0,	1.67E-05,	0],
+[0.000192011,	0,	3.66E-05,	0],
+[8.79E-05,	0,	4.07E-05,	0],
+[0.000159467,	0,	1.90E-05,	1],
+[0.000107396,	0,	3.22E-05,	0],
+[0.000162721,	0,	1.48E-05,	0],
+[0.000100887,	0,	4.36E-05,	1]]
+Y_test = [[0],
+[0],
+[0],
+[0],
+[0],
+[0],
+[0],
+[0],
+[0],
+[0],
+[0],
+[0],
+[0]
+]
+#Y_test = np.array(np.random.random((10)))
+
+resS = savedmodel.evaluate(X_test, Y_test)
+print("loss and mean_absolute_error", resS)
+
+predictionsS = np.around((savedmodel.predict(X_test)),0)
